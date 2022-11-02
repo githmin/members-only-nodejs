@@ -60,11 +60,9 @@ passport.deserializeUser(function(id, done) {
 });
 
 
-app.post('/log-in', 
-  passport.authenticate('local', { failureRedirect: '/log-in' }),
-  function(req, res) {
-    res.redirect('/');
-  });
+app.post('/log-in',
+    passport.authenticate('local', { failureRedirect: '/' , successRedirect: "/" }),
+);
 
 
 app.get("/", (req, res)=>{
