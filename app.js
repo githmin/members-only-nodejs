@@ -5,6 +5,7 @@ const session = require("express-session");
 const passport = require("passport");
 const LocalStrategy = require("passport-local").Strategy;
 const mongoose = require("mongoose");
+const { nextTick } = require('process');
 const Schema = mongoose.Schema;
 
 const mongoDb = process.env.DB_URL;
@@ -29,8 +30,56 @@ app.use(passport.initialize());
 app.use(passport.session());
 app.use(express.urlencoded({ extended: false }));
 
-app.get("/", (req, res) => res.render("index"));
+// app.get("/", (req, res) => res.render("index"));
 app.get("/sign-up", (req, res) => res.render("sign-up-form"));
+app.post("/sign-up", (req, res)=>{
+    const user = new User({
+        username : req.body.username,
+        password : req.body.password
+    }).save( err => { (err)? next(err) : res.send("Signup Successfull") })
+})
+
+passport.use(new LocalStrategy(
+    function(username, password, done) {
+      User.findOne({ username: username }, function (err, user) {
+        if (err) { return done(err); }
+        if (!user) { return done(null, false); }
+        return done(null, user);
+      });
+    }
+  ));
+
+passport.serializeUser(function(user, done) {
+    done(null, user.id);
+});
+
+passport.deserializeUser(function(id, done) {
+    User.findById(id, function(err, user) {
+    done(err, user);
+    });
+});
+
+
+app.post('/log-in', 
+  passport.authenticate('local', { failureRedirect: '/log-in' }),
+  function(req, res) {
+    res.redirect('/');
+  });
+
+
+app.get("/", (req, res)=>{
+    res.render("index", { user : req.user })
+})
+
+app.get("/log-out", (req, res, next) => {
+    req.logout(function (err) {
+      if (err) {
+        return next(err);
+      }
+      res.redirect("/");
+    });
+});
+
 
 
 app.listen(3000, () => console.log("app listening on port 3000!"));
